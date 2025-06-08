@@ -5,6 +5,7 @@ import datetime
 import requests
 import json
 import argparse
+from ftplib import FTP
 
 # Set up argument parser to ingest target IP/global variables
 parser = argparse.ArgumentParser(description="Lockpick: Recon and Exploit Assistant")
@@ -76,12 +77,32 @@ def extract_http_ports(nmap_output):
         # Return a list of found ports
         return http_ports
 
+def find_subdomains(target):
+    command = ["ffuf","-H", f"Host:FUZZ.{target}","-w","/home/user/Wordlists/SecLists/Discovery/DNS/bitquark-subdomains-top100000.txt","-u",target]
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_file = os.path.join(LOG_DIR,f"subdomains_{timestamp}.txt")
+    with open(log_file,"w") as output:
+        subprocess.run(command,stdout=output)
+
+    print(f"DNS fuzzing saved to {log_file}")
+    return log_file
+
+def check_anonymous_ftp(target):
+    try:
+        ftp = FTP(target)
+        ftp.login()
+        print(f"[+] Anonymous FTP access is available on {target}!")
+        ftp.quit()
+    except Exception as e:
+        print(f"[-] Failed to login anonymously on {target}. Reason: {e}")
+
 
 # Main execution
 if __name__ == "__main__":
     banner()
+    check_anonymous_ftp(TARGET)
     nmap_output = run_nmap(TARGET)
+    find_subdomains(TARGET)
     http_ports = extract_http_ports(nmap_output)
     print("Found HTTP ports:", http_ports)
-
 
