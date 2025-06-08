@@ -48,7 +48,7 @@ def banner():
 def run_nmap(target):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_file = os.path.join(LOG_DIR, f"nmap_{timestamp}.txt")
-    print(f"[+] Running nmap scan on {target}...")
+    print(f"[INFO] Running nmap scan on {target}...")
 
     if not os.path.exists(LOG_DIR):
         os.makedirs(LOG_DIR)
@@ -57,12 +57,31 @@ def run_nmap(target):
     with open(log_file, "w") as output:
         subprocess.run(command,stdout=output)
 
-    print(f"[+] Nmap results saved to {log_file}")
+    print(f"[INFO] Nmap results saved to {log_file}")
     return log_file
+
+def extract_http_ports(nmap_output):
+    http_ports = []
+
+    with open(nmap_output, 'r') as f:
+        lines = f.readlines()
+
+        for line in lines:
+            # Use regex to find lines where common HTTP ports numbers are included
+            if 'http' in line and 'open' in line:
+                  match = re.search(r'(\d+)/tcp\s+open\s+http', line)
+                  if match:
+                    http_ports.append(match.group(1))
+        
+        # Return a list of found ports
+        return http_ports
+
 
 # Main execution
 if __name__ == "__main__":
     banner()
     nmap_output = run_nmap(TARGET)
+    http_ports = extract_http_ports(nmap_output)
+    print("Found HTTP ports:", http_ports)
 
 
