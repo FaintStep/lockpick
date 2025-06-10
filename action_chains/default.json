@@ -1,0 +1,44 @@
+[
+    {
+      "name": "nmap_scan",
+      "tool": "run_nmap",
+      "args": {
+        "target": "{{target}}"
+      }
+    },  
+    {
+      "name": "guess_os",
+      "tool": "guess_os",
+      "args": {
+        "nmap_output":"$nmap_scan"
+      }
+    },
+    {
+      "name": "ftp_check",
+      "tool": "check_anonymous_ftp",
+      "args": {
+        "target": "{{target}}"
+      }
+    },
+    {
+        "name": "check_smb_guest",
+        "tool": "check_smb_guest",
+        "args": { "target": "{{target}}" },
+        "condition": "guess_os == 'windows'"
+      },
+    {
+      "name": "parse_http_ports",
+      "tool": "extract_http_ports",
+      "args": {
+        "nmap_output": "$nmap_scan"
+      }
+    },
+    {
+      "name": "dns_fuzz",
+      "tool": "find_subdomains",
+      "condition": "len(parse_http_ports) > 0",
+      "args": {
+        "target": "{{target}}"
+      }
+    }
+  ]
