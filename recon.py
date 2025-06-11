@@ -6,6 +6,7 @@ import requests
 import json
 import argparse
 from ftplib import FTP
+from summarize import *
 
 LOG_DIR = "logs"
 PROMPT_FILE = "prompts/recon_summary.txt"
@@ -163,6 +164,7 @@ def gowitness(target, ports, paths):
                 subprocess.run(cmd, stdout=output, stderr=output)
 
     print(f"[INFO] Gowitness screenshots saved to {screenshot_dir}")
+    summarize_gowitness_jsonl('./gowitness.jsonl')
     return screenshot_dir
     
 def fuzz_http_dirs(target, port, wordlist=None):

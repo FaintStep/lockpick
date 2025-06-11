@@ -1,30 +1,46 @@
+import json
 import requests
-import os
 
-def summarize_log(log_path,prompt_path="prompts/summary.txt",model="Mistral",export_path="exports/pasteable_summary.md"):
-    with open(prompt_path, "r") as f:
-        prompt = f.read()
-    with open(log_path, "r") as f:
-        log = f.read()
+def summarize_gowitness_jsonl(jsonl_path, model="mistral", endpoint="http://localhost:11434/api/generate"):
+    entries = []
+    with open(jsonl_path, "r") as f:
+        for line in f:
+            try:
+                data = json.loads(line.strip())
+                entries.append(data)
+            except json.JSONDecodeError:
+                continue
 
-    full_prompt = f"{prompt}\n\n{log}"
-    
-    response = requests.post("http://localhost:11434/api/generate", json={
+    prompt = "Analyze the following web service scan results and summarize any interesting technologies, misconfigurations, or attack surface paths. Focus on titles, server headers, and HTTP status codes.\n\n"
+    for entry in entries:
+        prompt += f"- URL: {entry.get('url')}\n"
+        prompt += f"  - Title: {entry.get('title')}\n"
+        prompt += f"  - Status Code: {entry.get('status_code')}\n"
+        headers = entry.get("headers")
+        if isinstance(headers, dict):
+            for k, v in headers.items():
+                prompt += f"    - Header: {k}: {v}\n"
+        elif isinstance(headers, list):
+            for header in headers:
+                prompt += f"    - Header: {header}\n"
+
+    payload = {
         "model": model,
-        "prompt" : full_prompt,
+        "prompt": prompt,
         "stream": False
-    })
+    }
 
-    summary = response.json().get("response", "[No response received]")
-
-    with open(log_path, "a") as f:
-        f.write("\n## AI Summary\n")
-        f.write(summary + "\n")
-
-    os.makedirs(os.path.dirname(export_path), exist_ok=True)
-    with open(export_path, "w") as f:
-        f.write(summary)
-
-    return summary
+    print("[INFO] Sending prompt to LLM...")
+    try:
+        res = requests.post(endpoint, json=payload)
+        res.raise_for_status()
+        data = res.json()
+        summary = data.get("response", "").strip()
+        print("[INFO] LLM summarization complete.")
+        print(f"Lockpick says: {summary}")
+        return summary
+    except Exception as e:
+        print(f"[ERROR] Failed to summarize: {e}")
+        return None
 
 
