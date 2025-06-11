@@ -120,6 +120,50 @@ def check_smb_guest(target):
     except Exception as e:
         print(f"[ERROR] SMB guest check failed: {e}")
         return False
+
+def enum4linux_ng(target):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_file = os.path.join(LOG_DIR,f"enum4linux-ng_{timestamp}.txt")
+    cmd = f"enum4linux-ng -A {target}"
+    with open(log_file,"w") as output:
+        subprocess.run(cmd,stdout=output)
+    print(f"[INFO] enum4linux-ng results saved to {log_file}")
+    return log_file
+
+def gowitness(target, ports, paths):
+    screenshot_dir = os.path.join("logs", "gowitness")
+    os.makedirs(screenshot_dir, exist_ok=True)
+    log_file = os.path.join(screenshot_dir, f"gowitness_{target}.log")
+
+    for port in ports:
+        base_url = f"http://{target}:{port}"
+
+        if paths:
+            for path in paths:
+                full_url = base_url + path
+                print(f"[INFO] Capturing screenshot of {full_url}")
+                cmd = [
+                    "gowitness", "scan", "single",
+                    "--url", full_url,
+                    "--write-jsonl",
+                    "--save-content"
+                ]
+                with open(log_file, "a") as output:
+                    subprocess.run(cmd, stdout=output, stderr=output)
+        else:
+            # fallback: just snapshot root if no paths provided
+            print(f"[INFO] Capturing screenshot of {base_url}")
+            cmd = [
+                "gowitness", "scan", "single",
+                "--url", base_url,
+                "--write-jsonl",
+                "--save-content"
+            ]
+            with open(log_file, "a") as output:
+                subprocess.run(cmd, stdout=output, stderr=output)
+
+    print(f"[INFO] Gowitness screenshots saved to {screenshot_dir}")
+    return screenshot_dir
     
 def fuzz_http_dirs(target, port, wordlist=None):
         if wordlist is None:
@@ -134,6 +178,8 @@ def fuzz_http_dirs(target, port, wordlist=None):
             "ffuf",
             "-u", url,
             "-w", wordlist,
+            "-mc", "200,204,401",
+            "-t","40",
             "-o", output_file,
             "-of", "json"
         ]
@@ -143,11 +189,22 @@ def fuzz_http_dirs(target, port, wordlist=None):
 
         print(f"[INFO] FFUF results saved to {output_file}")
 
+        valid_paths = []
+        seen_lengths = set()
+
         # Optional: parse for .git hits
         try:
             with open(output_file) as f:
                 results = json.load(f)
                 for result in results.get("results", []):
+
+                    path = "/" + result["input"]["FUZZ"]
+                    length = result.get("length")
+
+                    if length not in seen_lengths:
+                        valid_paths.append(path)
+                        seen_lengths.add(length)
+
                     if ".git" in result["url"]:
                         print(f"[+] Found potential .git repo at {result['url']}, running git-dumper...")
                         dump_path = os.path.join("logs", f"gitdump_{port}_{timestamp}")
@@ -158,5 +215,5 @@ def fuzz_http_dirs(target, port, wordlist=None):
         except Exception as e:
             print(f"[!] Error parsing FFUF results or running git-dumper: {e}")
 
-        return output_file
+        return valid_paths
 

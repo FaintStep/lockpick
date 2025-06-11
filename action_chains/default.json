@@ -39,7 +39,8 @@
       "condition": "len(parse_http_ports) > 0",
       "args": {
         "target": "{{target}}"
-      }
+      },
+      "disabled":"true"
     },
     {
         "name": "fuzz_http_80",
@@ -50,5 +51,23 @@
           "wordlist": "{{wordlist}}"
         },
         "condition": "'80' in parse_http_ports"
+    },
+    {
+      "name": "smb_enum",
+      "tool": "enum4linux_ng",
+      "args": {
+        "target": "{{target}}"
+      },
+      "condition": "guess_os == 'windows'"
+    },
+    {
+      "name": "screenshot_web",
+      "tool": "gowitness",
+      "args": {
+        "target": "{{target}}",
+        "ports": "$parse_http_ports",
+        "paths": "$fuzz_http_dirs"
+      },
+      "condition": "len(parse_http_ports) > 0"
     }
   ]

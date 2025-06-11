@@ -20,4 +20,3 @@ def log_step(log_path,title,command,output,max_length=2000):
 
 
 
-    

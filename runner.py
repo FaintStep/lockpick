@@ -11,7 +11,9 @@ TOOL_FUNCTIONS = {
     "find_subdomains": find_subdomains,
     "fuzz_http_dirs": fuzz_http_dirs,
     "check_anonymous_ftp": check_anonymous_ftp,
-    "check_smb_guest": check_smb_guest
+    "check_smb_guest": check_smb_guest,
+    "enum4linux_ng": enum4linux_ng,
+    "gowitness": gowitness
 }
 
 def load_chain(file_path):
@@ -46,6 +48,10 @@ def run_chain(chain, target, wordlist):
         tool = step["tool"]
         args = step.get("args", {})
         condition = step.get("condition")
+
+        if step.get("disabled"):
+            print(f"[SKIP] Skipping disabled step: {step['name']}")
+            continue
 
         if condition:
             if not evaluate_condition(condition, state):
