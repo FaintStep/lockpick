@@ -9,6 +9,7 @@ TOOL_FUNCTIONS = {
     "guess_os": guess_os,
     "extract_http_ports": extract_http_ports,
     "find_subdomains": find_subdomains,
+    "fuzz_http_dirs": fuzz_http_dirs,
     "check_anonymous_ftp": check_anonymous_ftp,
     "check_smb_guest": check_smb_guest
 }
@@ -17,12 +18,13 @@ def load_chain(file_path):
     with open(file_path, "r") as f:
         return json.load(f)
 
-def resolve_args(args_dict, state, target):
+def resolve_args(args_dict, state, target, wordlist):
     resolved = {}
     for k, v in args_dict.items():
         if isinstance(v, str):
             # Replace {{target}} placeholder
             v = v.replace("{{target}}", target)
+            v = v.replace("{{wordlist}}", wordlist)
             # Handle references like $step_name
             if v.startswith("$"):
                 ref_key = v[1:]
@@ -37,7 +39,7 @@ def evaluate_condition(condition, state):
         print(f"[!] Failed to evaluate condition '{condition}': {e}")
         return False
 
-def run_chain(chain, target):
+def run_chain(chain, target, wordlist):
     state = {}
     for step in chain:
         name = step["name"]
@@ -54,7 +56,7 @@ def run_chain(chain, target):
             print(f"[!] Unknown tool: {tool}")
             continue
 
-        resolved_args = resolve_args(args, state, target)
+        resolved_args = resolve_args(args, state, target, wordlist)
         print(f"[+] Running {name} ({tool}) with args: {resolved_args}")
         result = TOOL_FUNCTIONS[tool](**resolved_args)
 
@@ -68,9 +70,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Lockpick: Recon and Exploit Assistant")
     parser.add_argument("--model",default="mistral",help="Ollama model")
     parser.add_argument("--summarize",action="store_true", help="Use mistral to summarize recon results")
-    parser.add_argument("--target", required=True, help="Target IP or hostname")
+    parser.add_argument("--t", required=True, help="Target IP or hostname")
+    parser.add_argument("--w", required=True, help="Wordlist for webdir fuzzing")
     parser.add_argument("--chain", required=True, default="action_chains/default.json", help="Path to action chain JSON")
     args = parser.parse_args()
     banner()
     chain = load_chain(args.chain)
-    run_chain(chain, args.target)
+    run_chain(chain, args.t, args.w)

@@ -120,4 +120,43 @@ def check_smb_guest(target):
     except Exception as e:
         print(f"[ERROR] SMB guest check failed: {e}")
         return False
+    
+def fuzz_http_dirs(target, port, wordlist=None):
+        if wordlist is None:
+            wordlist = "/home/user/Wordlists/Discovery/Web-Content/directory-list-2.3-medium.txt"
+
+        url = f"http://{target}:{port}/FUZZ"
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join("logs", f"ffuf_{port}_{timestamp}.json")
+        os.makedirs("logs", exist_ok=True)
+
+        command = [
+            "ffuf",
+            "-u", url,
+            "-w", wordlist,
+            "-o", output_file,
+            "-of", "json"
+        ]
+
+        print(f"[INFO] Fuzzing {url} with FFUF...")
+        subprocess.run(command)
+
+        print(f"[INFO] FFUF results saved to {output_file}")
+
+        # Optional: parse for .git hits
+        try:
+            with open(output_file) as f:
+                results = json.load(f)
+                for result in results.get("results", []):
+                    if ".git" in result["url"]:
+                        print(f"[+] Found potential .git repo at {result['url']}, running git-dumper...")
+                        dump_path = os.path.join("logs", f"gitdump_{port}_{timestamp}")
+                        os.makedirs(dump_path, exist_ok=True)
+                        subprocess.run(["git-dumper", result["url"], dump_path])
+                        print(f"[+] Git repo dumped to {dump_path}")
+                        break
+        except Exception as e:
+            print(f"[!] Error parsing FFUF results or running git-dumper: {e}")
+
+        return output_file
 

@@ -40,5 +40,15 @@
       "args": {
         "target": "{{target}}"
       }
+    },
+    {
+        "name": "fuzz_http_80",
+        "tool": "fuzz_http_dirs",
+        "args": {
+          "target": "{{target}}",
+          "port": "80",
+          "wordlist": "{{wordlist}}"
+        },
+        "condition": "'80' in parse_http_ports"
     }
   ]
