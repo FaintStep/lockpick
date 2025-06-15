@@ -94,14 +94,20 @@ def find_subdomains(target):
     print(f"DNS fuzzing saved to {log_file}")
     return log_file
 
-def check_anonymous_ftp(target):
+
+def check_anonymous_ftp(target, verbose=True):
     try:
         ftp = FTP(target)
         ftp.login()
-        print(f"[+] Anonymous FTP access is available on {target}!")
+        result = f"Anonymous FTP access is available on {target}."
         ftp.quit()
     except Exception as e:
-        print(f"[-] Failed to login anonymously on {target}. Reason: {e}")
+        result = f"Failed to login anonymously on {target}. Reason: {e}"
+    
+    if verbose:
+        print(f"[+] {result}" if "available" in result else f"[-] {result}")
+    
+    return result
 
 def check_smb_guest(target):
     try:
@@ -112,15 +118,14 @@ def check_smb_guest(target):
         result = subprocess.run(command, capture_output=True, text=True, timeout=10)
 
         if "Disk|" in result.stdout or "IPC|" in result.stdout:
-            print(f"[+] SMB guest access appears to be enabled on {target}")
-            return True
+            result = f"[+] SMB guest access appears to be enabled on {target}"
         else:
-            print(f"[-] SMB guest access denied or no shares visible on {target}")
-            return False
-
+            result = f"[-] SMB guest access denied or no shares visible on {target}"
     except Exception as e:
         print(f"[ERROR] SMB guest check failed: {e}")
-        return False
+        result = f"[ERROR] SMB guest check failed: {e}"
+    
+    return result
 
 def enum4linux_ng(target):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -158,13 +163,15 @@ def gowitness(target, ports, paths):
                 "gowitness", "scan", "single",
                 "--url", base_url,
                 "--write-jsonl",
+                "--write-jsonl-file", f"{screenshot_dir}/gowitness.jsonl",
                 "--save-content"
             ]
             with open(log_file, "a") as output:
                 subprocess.run(cmd, stdout=output, stderr=output)
 
     print(f"[INFO] Gowitness screenshots saved to {screenshot_dir}")
-    summarize_gowitness_jsonl('./gowitness.jsonl')
+    # summarize_gowitness_jsonl('./gowitness.jsonl')
+    
     return screenshot_dir
     
 def fuzz_http_dirs(target, port, wordlist=None):
@@ -218,4 +225,3 @@ def fuzz_http_dirs(target, port, wordlist=None):
             print(f"[!] Error parsing FFUF results or running git-dumper: {e}")
 
         return valid_paths
-
