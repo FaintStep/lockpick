@@ -28,7 +28,7 @@ def add_manual_finding(target, finding, question=None, report_dir="logs"):
         print(f"[=] Finding already exists. Skipping duplicate.")
     
     print("[*] Re-analyzing with LLM..\n")
-    summarize_report(report)
+    summarize_report(report, args.model)
 
         
 
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument("--target", "-t", required=True, help="Target domain")
     parser.add_argument("--add-finding", "-f", required=True, help="Manual finding to add")
     parser.add_argument("--question", "-q", help="Optional question to include for LLM")
+    parser.add_argument("--model", choices=["mistral", "gemma:7b", "llama3"], default="mistral", help="Which LLM model to use")
     args = parser.parse_args()
 
     add_manual_finding(args.target,args.add_finding,args.question)
