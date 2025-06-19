@@ -17,7 +17,7 @@
 Primarily designed for local use in labs, CTFs, or structured red team exercises.
 
 # Features
-- Modular Recon Chains: Implement your unique methodology. Define action chains with JSON to dictate the specifics of your workflow. Run only the automated scans and check you like, or simply use the default. "Steps" can also be disabled via a flag value in the action_chains JSON structure as a simple on/off switch if you'd rather not remove the action altogether. Helps with quick testing and modifications to methodology. 
+- Modular Recon Chains: Implement your unique methodology. Define action chains with JSON to dictate the specifics of your workflow. Run only the automated scans and checks you like, or simply use the default. "Steps" can also be disabled via a flag value in the action_chains JSON structure as a simple on/off switch if you'd rather not remove the action altogether. Helps with quick testing and modifications to methodology. 
 
 - LLM Summarization: Pair scan output with local LLMs (via Ollama) for summarization of findings and recommendations around additional enumeration and exploitation. Lockpick currently supports choices for mistral, LLaMA3, and Gemma:7B out-of-the-box. This is easily modifiable with some simple tweaks if you have a preference for other models.
 
