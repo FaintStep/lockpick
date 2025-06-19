@@ -69,18 +69,30 @@ def run_chain(chain, target, wordlist):
         # Save result into state using step name
         state[name] = result
     print(f"State of step: {state}")
-    pass_report_data(state)
+    update_report_state(state, target)
 
-def pass_report_data(state,manual_findings_path=None):
-    report_data = {
-        "nmap": state.get("nmap_scan") or "No Nmap scan result",
-        "ftp": state.get("ftp_check") or "",
-        "smb": state.get("check_smb_guest") or "",
-        "subdomains": state.get("dns_fuzz") or [],
-        "http_paths": state.get("fuzz_http_80") or [],
-        "screenshots": os.path.join(state.get("screenshot_web", ""), "gowitness.jsonl")
-    }
-    summarize_report(report_data)
+def update_report_state(state, target):
+    path = f"logs/report_state_{target}.json"
+    report = {}
+
+    # Load existing state
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            report = json.load(f)
+
+    # Update
+    report["nmap"] = state.get("nmap_scan") or "No Nmap scan result"
+    report["ftp"] = state.get("ftp_check") or ""
+    report["smb"] = state.get("check_smb_guest") or ""
+    report["subdomains"] = state.get("dns_fuzz") or []
+    report["http_paths"] = state.get("fuzz_http_80") or []
+    report["screenshots"] = os.path.join(state.get("screenshot_web", ""), "gowitness.jsonl")
+
+    with open(path, "w") as f:
+        json.dump(report, f, indent=2)
+    
+    summarize_report(report)
+
 
 if __name__ == "__main__":
     # Set up argument parser to ingest target IP/global variables

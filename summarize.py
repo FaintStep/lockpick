@@ -3,7 +3,7 @@ import requests
 import os
 
 def summarize_report(report_data, model="mistral", endpoint="http://localhost:11434/api/generate"):
-    prompt = "Analyze the following penetration test results. Identify potential attack paths, vulnerabilities, or follow-up recon suggestions. What technologies are running? What does the website look like? Provide suggestions as to what might be most valuable to investigate or attempt to exploit next.\n\n"
+    prompt = "Analyze the following penetration test results. Identify potential attack paths, vulnerabilities, or follow-up recon suggestions. What technologies are running? What does the website look like? Provide suggestions as to what might be most valuable to investigate or attempt to exploit next. Address any follow-up questions under manual findings as part of your analysis of next-steps.\n\n"
 
     if "nmap" in report_data and os.path.exists(report_data["nmap"]):
         prompt += "## Nmap Results:\n"
@@ -43,6 +43,16 @@ def summarize_report(report_data, model="mistral", endpoint="http://localhost:11
                     print(f"[DEBUG] Parsed gowitness entry: {entry}")
                 except json.JSONDecodeError:
                     continue
+    
+    if "manual_findings" in report_data:
+        prompt += "\n## Manual Findings:\n"
+        for finding in report_data["manual_findings"]:
+            if isinstance(finding, dict):
+                prompt += f"- {finding['text']}\n"
+                if "question" in finding:
+                    prompt += f"  Follow-up Question: {finding['question']}\n"
+            else:
+                prompt += f"- {str(finding).strip()}\n"
 
     payload = {
         "model": model,
